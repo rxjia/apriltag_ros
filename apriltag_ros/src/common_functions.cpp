@@ -248,6 +248,39 @@ AprilTagDetectionArray TagDetector::detectTags (
     removeDuplicates();
   }
 
+  // Remove 在边缘处的检测
+  int count = 0;
+  bool duplicate_detected = false;
+  while (true) {
+      if (count > zarray_size(detections_) - 1) {
+          // The entire detecdction set was parsed
+          break;
+      }
+      apriltag_detection_t *detection;
+      zarray_get(detections_, count, &detection);
+
+      bool err=false;
+      int margin = 10;
+      for(int i =0;i<4;i++) {
+          if(!(margin<=detection->p[i][0] && detection->p[i][0] <=apriltag_image.width - margin)){
+              err = true;
+              break;
+          }
+          if(!(margin<=detection->p[i][1] && detection->p[i][1] <=apriltag_image.height - margin)){
+              err = true;
+              break;
+          }
+      }
+      if(err) {
+          // Remove the current tag detection from detections array
+          int shuffle = 0;
+          zarray_remove_index(detections_, count, shuffle);
+          continue;
+      } else {
+          count++;
+      }
+  }
+
   // Compute the estimated translation and rotation individually for each
   // detected tag
   AprilTagDetectionArray tag_detection_array;
